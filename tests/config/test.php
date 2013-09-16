@@ -14,8 +14,8 @@ return array(
 			'basePath'=>dirname(__FILE__).'/../fixtures',
 		),
 		'db'=>array(
-			'connectionString'=>'mysql:host=localhost;dbname=test',
-			'username'=>'root',
+			'connectionString'=>'sqlite:sqlite_test.db',
+			'username'=>'',
 			'password'=>'',
 			'charset'=>'utf8',
 		),

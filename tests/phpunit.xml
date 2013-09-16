@@ -4,4 +4,9 @@
 	convertNoticesToExceptions="true"
 	convertWarningsToExceptions="true"
 	stopOnFailure="false">
+		<testsuites>
+			<testsuite name="All Tests">
+			<directory>unit</directory>
+			</testsuite>
+		</testsuites>
 </phpunit>

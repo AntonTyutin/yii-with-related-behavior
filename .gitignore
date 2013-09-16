@@ -14,3 +14,7 @@ Thumbs.db
 
 # temporary yii distribution
 yii
+
+# test db
+/tests/sqlite_test.db
+
