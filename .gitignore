@@ -12,9 +12,8 @@ nbproject
 # windows thumbnail cache
 Thumbs.db
 
-# temporary yii distribution
-yii
-
 # test db
 /tests/sqlite_test.db
 
+# composer
+/vendor/

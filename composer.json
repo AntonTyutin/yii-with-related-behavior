@@ -1,0 +1,16 @@
+{
+    "name": "yiiext/with-related-behaviour",
+    "description": "Manage relations of ActiveRecord on save. Validation by relations.",
+    "authors": [
+        {
+            "name": "Alexander Kochetov",
+            "email": "creocoder@gmail.com"
+        }
+    ],
+    "require": {
+        "ext-pdo_sqlite": "*"
+    },
+    "require-dev": {
+        "yiisoft/yii": "dev-master"
+    }
+}
