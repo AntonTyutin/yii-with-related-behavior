@@ -1,5 +1,5 @@
 {
-    "name": "yiiext/with-related-behaviour",
+    "name": "yiiext/with-related-behavior",
     "description": "Manage relations of ActiveRecord on save. Validation by relations.",
     "authors": [
         {
