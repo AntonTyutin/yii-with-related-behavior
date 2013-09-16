@@ -323,8 +323,15 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 							throw new CDbException(Yii::t('yii','The relation "{relation}" in active record class "{class}" is specified with an incomplete foreign key. The foreign key must consist of columns referencing both joining tables.',
 								array('{class}'=>get_class($owner),'{relation}'=>$name)));
 
+						$condition=$builder->createInCondition(
+							$joinTable,
+							array_values($ownerMap),
+							count($ownerTableSchema->primaryKey) > 1 ? array($owner->$pk) : array($ownerTableSchema->primaryKey[0] => $owner->$pk)
+						);
+						$criteria=$builder->createCriteria($condition);
+						$builder->createDeleteCommand($joinTable,$criteria)->execute();
+
 						$insertAttributes=array();
-						$deleteAttributes=array();
 
 						foreach($related as $model)
 						{
@@ -343,17 +350,7 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 							foreach($relatedMap as $pk=>$fk)
 								$joinTableAttributes[$fk]=$model->$pk;
 
-							if(!$newFlag)
-								$deleteAttributes[]=$joinTableAttributes;
-
 							$insertAttributes[]=$joinTableAttributes;
-						}
-
-						if($deleteAttributes!==array())
-						{
-							$condition=$builder->createInCondition($joinTable,array_merge(array_values($ownerMap),array_values($relatedMap)),$deleteAttributes);
-							$criteria=$builder->createCriteria($condition);
-							$builder->createDeleteCommand($joinTable,$criteria)->execute();
 						}
 
 						foreach($insertAttributes as $attributes)
