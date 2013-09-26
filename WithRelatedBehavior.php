@@ -9,15 +9,21 @@
 /**
  * Allows you to save related models along with the main model.
  * All relation types are supported.
+ * You may set additional relation attributes for MANY_MANY relations.
  *
  * @property CActiveRecord $owner
  * @method CActiveRecord getOwner()
  *
- * @version 0.65
  * @package yiiext.with-related-behavior
  */
 class WithRelatedBehavior extends CActiveRecordBehavior
 {
+	/**
+	 * Relations attributes values
+	 * @var array
+	 */
+	private $relationAttributes = array();
+
 	/**
 	 * Validate main model and all it's related models recursively.
 	 * @param array $data attributes and relations.
@@ -127,6 +133,21 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 			$map[$fk] = $pk;
 		}
 		return $map;
+	}
+
+	/**
+	 * Setting relation attributes for many to many relation
+	 * @param string $relationName
+	 * @param object $relationObject
+	 * @param array  $attributes      [attributeName => value]
+	 */
+	public function setManyManyAttributes($relationName, $relatedObject, $attributes)
+	{
+		$objectHash = spl_object_hash($relatedObject);
+		if (!in_array($relatedObject, $this->getOwner()->getRelated($relationName))) {
+			throw CException("The {$relationName} isn't related to Object\{{$objectHash}\}");
+		}
+		$this->relationAttributes[$relationName][$objectHash] = $attributes;
 	}
 
 	/**
@@ -343,6 +364,10 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 								$this->save(false,$data,$model);
 
 							$joinTableAttributes=array();
+
+							foreach((array)@$this->relationAttributes[$name][spl_object_hash($model)] as $attrName=>$attrValue) {
+								$joinTableAttributes[$attrName]=$attrValue;
+							}
 
 							foreach($ownerMap as $pk=>$fk)
 								$joinTableAttributes[$fk]=$owner->$pk;
