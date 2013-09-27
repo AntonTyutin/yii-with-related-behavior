@@ -8,9 +8,9 @@
         }
     ],
     "require": {
-        "ext-pdo_sqlite": "*"
     },
     "require-dev": {
-        "yiisoft/yii": "dev-master"
+        "yiisoft/yii": "dev-master",
+        "ext-pdo_sqlite": "*"
     }
 }
