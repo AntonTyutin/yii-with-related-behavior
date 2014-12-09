@@ -12,5 +12,8 @@
     "require-dev": {
         "yiisoft/yii": "dev-master",
         "ext-pdo_sqlite": "*"
+    },
+    "autoload": {
+        "classmap": ["WithRelatedBehavior.php"]
     }
 }
