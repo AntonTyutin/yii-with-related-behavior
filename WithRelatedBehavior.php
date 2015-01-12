@@ -74,10 +74,13 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 			if(!$owner->hasRelated($name))
 				continue;
 
-			/** @var CActiveRecord|CActiveRecord[] $related */
+			/** @var CActiveRecord|CActiveRecord[]|null $related */
 			$related=$owner->getRelated($name);
 
-			if(is_array($related))
+			if(null === $related) {
+				continue;
+			}
+			elseif(is_array($related))
 			{
 				foreach($related as $model)
 				{
@@ -224,19 +227,20 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 
 				if($relationClass===CActiveRecord::BELONGS_TO)
 				{
-					/** @var CActiveRecord|CActiveRecord[] $related */
+					/** @var CActiveRecord|CActiveRecord[]|null $related */
 					$related=$owner->getRelated($name);
-					$relatedTableSchema=$related->getTableSchema();
+					$relatedTableSchema=CActiveRecord::model($relatedClass)->getTableSchema();
+					$keysMap=$this->getDependencyAttributes($relations[$name]->foreignKey, $relatedTableSchema, $ownerTableSchema);
 
-					if($data!==null)
-						$this->save(false,$data,$related);
-					else
-						$related->getIsNewRecord() ? $related->insert() : $related->update();
+					if (null!==$related) {
+						if($data!==null)
+							$this->save(false,$data,$related);
+						else
+							$related->getIsNewRecord() ? $related->insert() : $related->update();
+					} 
 
-					$fks = $relations[$name]->foreignKey;
-					$map = $this->getDependencyAttributes($fks, $relatedTableSchema, $ownerTableSchema);
-					foreach ($map as $fk => $pk) {
-						$owner->$fk = $related->$pk;
+					foreach ($keysMap as $fk=>$pk) {
+						$owner->$fk=$related ? $related->$pk : null;
 					}
 				}
 				else
@@ -249,8 +253,14 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 			foreach($queue as $pack)
 			{
 				list($relationClass,$relatedClass,$fks,$name,$data)=$pack;
+				/** @var CActiveRecord|CActiveRecord[]|null $related */
 				$related=$owner->getRelated($name);
 				$relatedTableSchema=CActiveRecord::model($relatedClass)->getTableSchema();
+
+				if (null===$related) {
+					// TODO: implement unlinking strategies for queued relations
+					continue;
+				}
 
 				switch($relationClass)
 				{

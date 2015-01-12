@@ -148,7 +148,7 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$this->assertEquals('tag4',$article->tags[3]->name);
 	}
 
-	public function testUnsetRelations()
+	public function testUnsetManyManyRelations()
 	{
 		$tag1=new Tag;
 		$tag2=new Tag;
@@ -198,6 +198,72 @@ class WithRelatedBehaviorTest extends CDbTestCase
 
 		$article=Article::model()->with('tags')->find();
 		$this->assertEquals(0,count($article->tags));
+	}
+
+	public function testUnsetBelongsToRelation()
+	{
+		$group=new Group;
+		$group->name = 'Group';
+
+		$user=new User;
+		$user->name = 'User';
+		$user->group = $group;
+
+		$result=$user->withRelated->save(true,array("group"));
+		$this->assertTrue($result);
+
+		$user=User::model()->with('group')->find();
+		$this->assertNotNull($user->group);
+
+		$user->group = null;
+
+		$result=$user->withRelated->save(true,array("group"));
+		$this->assertTrue($result);
+
+		$user=User::model()->with('group')->find();
+		$this->assertNull($user->group);
+	}
+
+	public function testUnsetHasManyRelations()
+	{
+		$this->markTestSkipped('This functionality has not been implemented yet.');
+
+		$article=new Article;
+
+		$user=new User;
+
+		$article->user=$user;
+
+		$user->group=new Group;
+
+		$comment1=new Comment;
+		$comment1->user=$user;
+
+		$comment2=new Comment;
+		$comment2->user=$user;
+
+		$article->comments=array($comment1,$comment2);
+
+		$article->title='article1';
+		$user->name='user1';
+		$user->group->name='group1';
+		$comment1->content='comment1';
+		$comment2->content='comment2';
+
+		$result=$article->withRelated->save(true,array(
+			'user'=>array('group'),
+			'comments'=>array('user'),
+		));
+		$this->assertTrue($result);
+		
+		$article->comments=array_slice($article->comments,1);
+
+		$result=$article->withRelated->save(true,array('comments'));
+		$this->assertTrue($result);
+
+		$article=Article::model()->with(array('comments'))->find();
+
+		$this->assertCount(1,$article->comments);
 	}
 
 	/**

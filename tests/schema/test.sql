@@ -42,6 +42,6 @@ DROP TABLE IF EXISTS `user`;
 
 CREATE TABLE `user` (
   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-  `group_id` int(10) NOT NULL,
+  `group_id` int(10) NULL,
   `name` varchar(100) NOT NULL
 );
