@@ -226,8 +226,6 @@ class WithRelatedBehaviorTest extends CDbTestCase
 
 	public function testUnsetHasManyRelations()
 	{
-		$this->markTestSkipped('This functionality has not been implemented yet.');
-
 		$article=new Article;
 
 		$user=new User;
