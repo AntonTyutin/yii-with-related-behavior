@@ -276,6 +276,35 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 							$this->save(false,$data,$related);
 						break;
 					case CActiveRecord::HAS_MANY:
+						$oldOwner = clone $owner;
+						$oldRelated = $oldOwner->getRelated($name, true);
+
+						$notCreatedRelated = array_filter($related, function ($model) {
+							return !$model->getIsNewRecord();
+						});
+
+						$deletedModels = array_udiff($oldRelated, $notCreatedRelated, function ($a, $b) {
+							if (is_array($a->primaryKey)) {
+								foreach ($a->primaryKey as $k => $v) {
+									if ($v > $b->primaryKey[$k]) {
+										return 1;
+									} elseif ($v < $b->primaryKey[$k]) {
+										return -1;
+									}
+								}
+
+								return 0;
+							} else {
+								return $a->primaryKey > $b->primaryKey
+									? 1
+									: ($a->primaryKey < $b->primaryKey ? -1 : 0);
+							}
+						});
+
+						foreach ($deletedModels as $deletedModel) {
+							$deletedModel->delete();
+						}
+
 						$map = $this->getDependencyAttributes($fks, $ownerTableSchema, $relatedTableSchema);
 						foreach($related as $model)
 						{
