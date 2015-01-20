@@ -23,7 +23,21 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	 * @var array
 	 */
 	private $relationAttributes = array();
+	
+	/**
+	 * Validation errors
+	 * @var array
+	 */
+	private $_errors = array();
 
+	/**
+	 * Returns the errors
+	 * @return array errors. Empty array is returned if no error.
+	 */
+	public function getErrors()
+	{
+		return $this->_errors;
+	}
 	/**
 	 * Validate main model and all it's related models recursively.
 	 * @param array $data attributes and relations.
@@ -87,7 +101,10 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 					if(is_array($data))
 						$valid=$this->validate($data,$clearErrors,$model) && $valid;
 					else
+					{
 						$valid=$model->validate(null,$clearErrors) && $valid;
+						$this->_errors=array_merge($this->_errors, array($name => $model->getErrors()));
+					}
 				}
 			}
 			else
@@ -95,7 +112,10 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 				if(is_array($data))
 					$valid=$this->validate($data,$clearErrors,$related) && $valid;
 				else
+				{
 					$valid=$related->validate(null,$clearErrors) && $valid;
+					$this->_errors=array_merge($this->_errors, array($name => $related->getErrors()));
+				}
 			}
 		}
 
