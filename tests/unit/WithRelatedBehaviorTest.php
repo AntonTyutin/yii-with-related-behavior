@@ -410,4 +410,9 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$this->assertEquals(2,count($articleTags));
 		$this->assertEquals(100,$articleTags[1]->weight);
 	}
+
+	public function testSaveRelationAttributesCircularRefs()
+	{
+		$this->markTestSkipped('Not implemented.');
+	}
 }
