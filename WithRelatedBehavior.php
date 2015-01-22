@@ -167,7 +167,7 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	public function setManyManyAttributes($relationName, $relatedObject, $attributes)
 	{
 		$objectHash = spl_object_hash($relatedObject);
-		if (!in_array($relatedObject, $this->getOwner()->getRelated($relationName))) {
+		if (!in_array($relatedObject, $this->getOwner()->getRelated($relationName), true)) {
 			throw CException("The {$relationName} isn't related to Object\{{$objectHash}\}");
 		}
 		$this->relationAttributes[$relationName][$objectHash] = $attributes;
