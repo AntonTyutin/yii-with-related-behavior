@@ -47,6 +47,19 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	 */
 	public function validate($data=null,$clearErrors=true,$owner=null)
 	{
+		$this->_errors=$this->internalValidateAndGetErrors($data,$clearErrors,$owner);
+		return !$this->_errors;
+	}
+
+	/**
+	 * Validate main model and all it's related models recursively and return associative array of errors.
+	 * @param array $data attributes and relations.
+	 * @param boolean $clearErrors whether to call {@link CModel::clearErrors} before performing validation.
+	 * @param CActiveRecord $owner for internal needs.
+	 * @return array associative array of errors including errors of relations specified in $data
+	 */
+	private function internalValidateAndGetErrors($data,$clearErrors,$owner)
+	{
 		if($owner===null)
 			$owner=$this->getOwner();
 
@@ -78,7 +91,8 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 				create_function('$x,$y','return !is_string($x) || !is_string($y) ? -1 : strcmp($x,$y);'));
 		}
 
-		$valid=$owner->validate($attributes,$clearErrors);
+		$owner->validate($attributes,$clearErrors);
+		$errors=$owner->errors;
 
 		foreach($newData as $name=>$data)
 		{
@@ -91,35 +105,25 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 			/** @var CActiveRecord|CActiveRecord[]|null $related */
 			$related=$owner->getRelated($name);
 
-			if(null === $related) {
+			if(null===$related)
+			{
 				continue;
 			}
-			elseif(is_array($related))
-			{
-				foreach($related as $model)
-				{
-					if(is_array($data))
-						$valid=$this->validate($data,$clearErrors,$model) && $valid;
-					else
-					{
-						$valid=$model->validate(null,$clearErrors) && $valid;
-						$this->_errors=array_merge($this->_errors, array($name => $model->getErrors()));
-					}
-				}
-			}
-			else
+			$related=is_array($related)?$related:array($related);
+			foreach($related as $model)
 			{
 				if(is_array($data))
-					$valid=$this->validate($data,$clearErrors,$related) && $valid;
-				else
 				{
-					$valid=$related->validate(null,$clearErrors) && $valid;
-					$this->_errors=array_merge($this->_errors, array($name => $related->getErrors()));
+					if ($relationErrors=$this->internalValidateAndGetErrors($data,$clearErrors,$model))
+						$errors[$name]=$relationErrors;
 				}
+				else
+					if(!$model->validate(null,$clearErrors))
+						$errors[$name]=$model->errors;
 			}
 		}
 
-		return $valid;
+		return $errors;
 	}
 
 	/**

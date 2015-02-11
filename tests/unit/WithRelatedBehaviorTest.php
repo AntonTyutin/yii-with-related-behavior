@@ -379,6 +379,25 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$this->assertTrue(User::model()->exists('name="Alan2 Cox"'));
 	}
 
+	public function testGetErrors()
+	{
+		$article=new Article();
+		$user=$article->user=new User();
+		$user->group=new Group();
+		$isValid=$article->withRelated->validate(array('user'=>array('group')));
+
+		$errors=$article->withRelated->errors;
+
+		$this->assertFalse($isValid);
+		$this->assertArrayHasKey('title',$errors);
+		$this->assertArrayHasKey('user',$errors);
+		$this->assertInternalType('array', $errors['user']);
+		$this->assertArrayHasKey('name',$errors['user']);
+		$this->assertArrayHasKey('group',$errors['user']);
+		$this->assertInternalType('array', $errors['user']['group']);
+		$this->assertArrayHasKey('name', $errors['user']['group']);
+	}
+	
 	public function testSaveRelationAttributes()
 	{
 		$tag1=new Tag;
