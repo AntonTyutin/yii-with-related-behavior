@@ -382,17 +382,29 @@ class WithRelatedBehaviorTest extends CDbTestCase
 	public function testGetErrors()
 	{
 		$article=new Article();
+		$article->comments=array(
+			new Comment(),
+			new Comment(),
+		);
 		$user=$article->user=new User();
 		$user->group=new Group();
-		$isValid=$article->withRelated->validate(array('user'=>array('group')));
+		$isValid=$article->withRelated->validate(array('user'=>array('group'),'comments'));
 
 		$errors=$article->withRelated->errors;
 
 		$this->assertFalse($isValid);
 		$this->assertArrayHasKey('title',$errors);
+
+		$this->assertArrayHasKey('comments',$errors);
+		$this->assertInternalType('array', $errors['comments']);
+		$this->assertCount(2, $errors['comments']);
+		$this->assertInternalType('array', $errors['comments'][0]);
+		$this->assertArrayHasKey('content',$errors['comments'][0]);
+
 		$this->assertArrayHasKey('user',$errors);
 		$this->assertInternalType('array', $errors['user']);
 		$this->assertArrayHasKey('name',$errors['user']);
+
 		$this->assertArrayHasKey('group',$errors['user']);
 		$this->assertInternalType('array', $errors['user']['group']);
 		$this->assertArrayHasKey('name', $errors['user']['group']);

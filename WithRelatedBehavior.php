@@ -52,81 +52,6 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	}
 
 	/**
-	 * Validate main model and all it's related models recursively and return associative array of errors.
-	 * @param array $data attributes and relations.
-	 * @param boolean $clearErrors whether to call {@link CModel::clearErrors} before performing validation.
-	 * @param CActiveRecord $owner for internal needs.
-	 * @return array associative array of errors including errors of relations specified in $data
-	 */
-	private function internalValidateAndGetErrors($data,$clearErrors,$owner)
-	{
-		if($owner===null)
-			$owner=$this->getOwner();
-
-		if($data===null)
-		{
-			$attributes=null;
-			$newData=array();
-		}
-		else
-		{
-			// retrieve real class attributes that was specified in the class declaration
-			$classAttributes=get_class_vars(get_class($owner));
-			unset($classAttributes['db']); // has nothing in common with the application logic
-			$classAttributes=array_keys($classAttributes);
-
-			// mixing virtual attributes that represents database table columns with real class attributes
-			$attributeNames=array_merge($classAttributes,$owner->attributeNames());
-			// array_intersect must not be used here because when error_reporting is -1 notice will happen
-			// since $data array contains not just scalar string values
-			$attributes=array_uintersect($data,$attributeNames,
-				create_function('$x,$y','return !is_string($x) || !is_string($y) ? -1 : strcmp($x,$y);'));
-
-			if($attributes===array())
-				$attributes=null;
-
-			// array_udiff must not be used here because when error_reporting is -1 notice will happen
-			// since $data array contains not just scalar string values
-			$newData=array_udiff($data,$attributeNames,
-				create_function('$x,$y','return !is_string($x) || !is_string($y) ? -1 : strcmp($x,$y);'));
-		}
-
-		$owner->validate($attributes,$clearErrors);
-		$errors=$owner->errors;
-
-		foreach($newData as $name=>$data)
-		{
-			if(!is_array($data))
-				$name=$data;
-
-			if(!$owner->hasRelated($name))
-				continue;
-
-			/** @var CActiveRecord|CActiveRecord[]|null $related */
-			$related=$owner->getRelated($name);
-
-			if(null===$related)
-			{
-				continue;
-			}
-			$related=is_array($related)?$related:array($related);
-			foreach($related as $model)
-			{
-				if(is_array($data))
-				{
-					if ($relationErrors=$this->internalValidateAndGetErrors($data,$clearErrors,$model))
-						$errors[$name]=$relationErrors;
-				}
-				else
-					if(!$model->validate(null,$clearErrors))
-						$errors[$name]=$model->errors;
-			}
-		}
-
-		return $errors;
-	}
-
-	/**
 	 * @param array|string $foreignKey
 	 * @param CDbTableSchema $ownerTableSchema
 	 * @param CDbTableSchema $dependentTableSchema
@@ -261,7 +186,7 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 							$this->save(false,$data,$related);
 						else
 							$related->getIsNewRecord() ? $related->insert() : $related->update();
-					} 
+					}
 
 					foreach ($keysMap as $fk=>$pk) {
 						$owner->$fk=$related ? $related->$pk : null;
@@ -523,5 +448,94 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 			case CActiveRecord::MANY_MANY:
 				break;
 		}
+	}
+
+	/**
+	 * Validate main model and all it's related models recursively and return associative array of errors.
+	 * @param array|null $data attributes and relations.
+	 * @param boolean $clearErrors whether to call {@link CModel::clearErrors} before performing validation.
+	 * @param CActiveRecord $owner for internal needs.
+	 * @return array associative array of errors including errors of relations specified in $data
+	 */
+	private function internalValidateAndGetErrors($data,$clearErrors,$owner)
+	{
+		if($owner===null)
+			$owner=$this->getOwner();
+
+		if($data===null)
+		{
+			$attributes=null;
+			$newData=array();
+		}
+		else
+		{
+			// retrieve real class attributes that was specified in the class declaration
+			$classAttributes=get_class_vars(get_class($owner));
+			unset($classAttributes['db']); // has nothing in common with the application logic
+			$classAttributes=array_keys($classAttributes);
+
+			// mixing virtual attributes that represents database table columns with real class attributes
+			$attributeNames=array_merge($classAttributes,$owner->attributeNames());
+			// array_intersect must not be used here because when error_reporting is -1 notice will happen
+			// since $data array contains not just scalar string values
+			$attributes=array_uintersect($data,$attributeNames,
+				create_function('$x,$y','return !is_string($x) || !is_string($y) ? -1 : strcmp($x,$y);'));
+
+			if($attributes===array())
+				$attributes=null;
+
+			// array_udiff must not be used here because when error_reporting is -1 notice will happen
+			// since $data array contains not just scalar string values
+			$newData=array_udiff($data,$attributeNames,
+				create_function('$x,$y','return !is_string($x) || !is_string($y) ? -1 : strcmp($x,$y);'));
+		}
+
+		$owner->validate($attributes,$clearErrors);
+		$errors=$owner->errors;
+
+		foreach($newData as $name=>$data)
+		{
+			if(!is_array($data))
+				$name=$data;
+
+			if(!$owner->hasRelated($name))
+				continue;
+
+			/** @var CActiveRecord|CActiveRecord[]|null $related */
+			$related=$owner->getRelated($name);
+
+			if(null===$related)
+				continue;
+			elseif(is_array($related))
+			{
+				foreach ($related as $model)
+					if ($relationErrors=$this->getRelationErrors($data,$clearErrors,$model))
+						$errors[$name][]=$relationErrors;
+			}
+			else
+				if($relationErrors=$this->getRelationErrors($data,$clearErrors,$related))
+					$errors[$name]=$relationErrors;
+		}
+
+		return $errors;
+	}
+
+	/**
+	 * Collects errors of given related object
+	 *
+	 * @param array|null $data
+	 * @param bool $clearErrors
+	 * @param CActiveRecord $model
+	 *
+	 * @return array
+	 */
+	private function getRelationErrors($data,$clearErrors,$model)
+	{
+		$relationErrors = array();
+		if (is_array($data))
+			$relationErrors=$this->internalValidateAndGetErrors($data,$clearErrors,$model);
+		elseif (!$model->validate(null,$clearErrors))
+			$relationErrors=$model->errors;
+		return $relationErrors;
 	}
 }
