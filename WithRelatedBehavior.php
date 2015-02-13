@@ -72,14 +72,19 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 				$index = $fk;
 				$fk = $pk;
 
-				if(isset($ownerTableSchema->foreignKeys[$fk]) && $dbSchema->compareTableNames($dependentTableSchema->rawName,$ownerTableSchema->foreignKeys[$fk][0]))
-					$pk=$ownerTableSchema->foreignKeys[$fk][1];
+				if(isset($dependentTableSchema->foreignKeys[$fk])
+							&& $dbSchema->compareTableNames(
+								$ownerTableSchema->rawName,
+								$dependentTableSchema->foreignKeys[$fk][0]
+							)
+						)
+					$pk=$dependentTableSchema->foreignKeys[$fk][1];
 				else // FK constraints undefined
 				{
-					if(is_array($dependentTableSchema->primaryKey)) // composite PK
-						$pk=$dependentTableSchema->primaryKey[$index];
+					if(is_array($ownerTableSchema->primaryKey)) // composite PK
+						$pk=$ownerTableSchema->primaryKey[$index];
 					else
-						$pk=$dependentTableSchema->primaryKey;
+						$pk=$ownerTableSchema->primaryKey;
 				}
 			}
 			$map[$fk] = $pk;
