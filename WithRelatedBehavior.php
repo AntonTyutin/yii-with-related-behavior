@@ -19,6 +19,12 @@
 class WithRelatedBehavior extends CActiveRecordBehavior
 {
 	/**
+	 * List of relations to process (save/validate)
+	 * @var array
+	 */
+	private $_processedRelations = array();
+
+	/**
 	 * Relations attributes values
 	 * @var array
 	 */
@@ -47,6 +53,7 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	 */
 	public function validate($data=null,$clearErrors=true,$owner=null)
 	{
+		$data = $this->mergeProcessedRelationsWith($data);
 		$this->_errors=$this->internalValidateAndGetErrors($data,$clearErrors,$owner);
 		return !$this->_errors;
 	}
@@ -125,6 +132,8 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 
 			$owner=$this->getOwner();
 		}
+
+		$data = $this->mergeProcessedRelationsWith($data);
 
 		/** @var CDbConnection $db */
 		$db=$owner->getDbConnection();
@@ -542,5 +551,41 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 		elseif (!$model->validate(null,$clearErrors))
 			$relationErrors=$model->errors;
 		return $relationErrors;
+	}
+
+	/**
+	 * Add relation(s) to processed list
+	 * @param array|string $definition
+	 */
+	public function addProcessedRelation($definition)
+	{
+		if (is_array($definition)) {
+			$this->_processedRelations = CMap::mergeArray($this->_processedRelations,$definition);
+		} elseif (is_string($definition)) {
+			$this->_processedRelations[]=$definition;
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Get list of processed relations
+	 * @param array|null $definition extra relations definitions to merge
+	 * @return array
+	 */
+	private function mergeProcessedRelationsWith($definition=null)
+	{
+		return $definition!==null
+			? CMap::mergeArray($this->_processedRelations,$definition)
+			: $this->_processedRelations;
+	}
+
+	/**
+	 * Get list of processed relations
+	 * @return array
+	 */
+	public function getProcessedRelations()
+	{
+		return $this->_processedRelations;
 	}
 }
