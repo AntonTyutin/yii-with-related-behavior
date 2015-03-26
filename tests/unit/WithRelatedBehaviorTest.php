@@ -446,4 +446,80 @@ class WithRelatedBehaviorTest extends CDbTestCase
 	{
 		$this->markTestSkipped('Not implemented.');
 	}
+
+	public function testProcessedRelations()
+	{
+		$article=new Article;
+
+		/** @var $behavior WithRelatedBehavior */
+		$modelBehavior=$article->withRelated;
+		$modelBehavior->addProcessedRelation('user');
+		$this->assertEquals($modelBehavior->getProcessedRelations(),array('user'));
+		$modelBehavior->addProcessedRelation('tag');
+		$this->assertEquals($modelBehavior->getProcessedRelations(),array('user','tag'));
+	}
+
+	public function testProcessedRelationsValidate()
+	{
+		$tag1=new Tag;
+		$tag2=new Tag;
+
+		$tag1->name='tag1';
+
+		$group=new Group;
+		$group->name='Group';
+
+		$user=new User;
+		$user->name='User';
+		$user->group=$group;
+
+		$article=new Article;
+		$article->title='Article';
+		$article->user=$user;
+		$article->tags=array($tag1,$tag2);
+
+		$relations=array('user', 'tags');
+		/** @var $behavior WithRelatedBehavior */
+		$modelBehavior=$article->withRelated;
+		$modelBehavior->addProcessedRelation($relations);
+
+		// validate none-valid state
+		$modelBehavior->validate();
+		$errors=$modelBehavior->getErrors();
+		$this->assertNotEmpty($errors['tags']);
+	}
+
+	public function testProcessedRelationsSave()
+	{
+		$tag1=new Tag;
+		$tag2=new Tag;
+
+		$tag1->name='tag1';
+		$tag2->name='tag2';
+
+		$group=new Group;
+		$group->name='Group';
+
+		$user=new User;
+		$user->name='User';
+		$user->group=$group;
+
+		$article=new Article;
+		$article->title='Article';
+		$article->user=$user;
+		$article->tags=array($tag1,$tag2);
+
+		$relations=array('user', 'tags');
+		/** @var $behavior WithRelatedBehavior */
+		$modelBehavior=$article->withRelated;
+		$modelBehavior->addProcessedRelation($relations);
+		
+		// save valid date and check existance
+		$modelBehavior->save();
+		$savedArticle=Article::model()->with(array('user', 'tags'))->find();
+
+		$this->assertNotEmpty($savedArticle);
+		$this->assertNotEmpty($savedArticle->tags);
+		$this->assertNotEmpty($savedArticle->user);
+	}
 }
