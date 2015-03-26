@@ -491,6 +491,68 @@ class WithRelatedBehaviorTest extends CDbTestCase
 
 	public function testProcessedRelationsSave()
 	{
+		$article=self::createNewUserArticleWithTags();
+
+		$relations=array('user', 'tags');
+		/** @var $behavior WithRelatedBehavior */
+		$modelBehavior=$article->withRelated;
+		$modelBehavior->addProcessedRelation($relations);
+		
+		// save valid data and check existance
+		$modelBehavior->save();
+		$savedArticle=Article::model()->with(array('user', 'tags'))->find();
+
+		$this->assertNotEmpty($savedArticle);
+		$this->assertNotEmpty($savedArticle->tags);
+		$this->assertNotEmpty($savedArticle->user);
+	}
+
+	public function testNotUniqueRelationsValidate()
+	{
+		$article=self::createNewUserArticleWithTags();
+
+		$relations=array(
+			'user',
+			'user',
+			'tags',
+			'tags',
+		);
+		/** @var $behavior WithRelatedBehavior */
+		$modelBehavior=$article->withRelated;
+		$modelBehavior->addProcessedRelation($relations);
+
+		// validate none-valid state
+		$modelBehavior->validate();
+		$errors=$modelBehavior->getErrors();
+		$this->assertEmpty($errors);
+	}
+
+	public function testNotUniqueRelationsSave()
+	{
+		$article = self::createNewUserArticleWithTags();
+
+		$relations=array(
+			'user',
+			'user',
+			'tags',
+			'tags',
+		);
+		/** @var $behavior WithRelatedBehavior */
+		$modelBehavior=$article->withRelated;
+		$modelBehavior->addProcessedRelation($relations);
+
+		$modelBehavior->save();
+		$savedArticle=Article::model()->with(array('user', 'tags'))->find();
+		$this->assertNotEmpty($savedArticle);
+		$this->assertEquals(count($savedArticle->user), 1);
+		$this->assertEquals(count($savedArticle->tags), 2);
+	}
+
+	/**
+	 * @return Article
+	 */
+	public static function createNewUserArticleWithTags()
+	{
 		$tag1=new Tag;
 		$tag2=new Tag;
 
@@ -509,17 +571,6 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$article->user=$user;
 		$article->tags=array($tag1,$tag2);
 
-		$relations=array('user', 'tags');
-		/** @var $behavior WithRelatedBehavior */
-		$modelBehavior=$article->withRelated;
-		$modelBehavior->addProcessedRelation($relations);
-		
-		// save valid date and check existance
-		$modelBehavior->save();
-		$savedArticle=Article::model()->with(array('user', 'tags'))->find();
-
-		$this->assertNotEmpty($savedArticle);
-		$this->assertNotEmpty($savedArticle->tags);
-		$this->assertNotEmpty($savedArticle->user);
+		return $article;
 	}
 }
