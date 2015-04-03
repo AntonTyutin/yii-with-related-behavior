@@ -13,6 +13,13 @@ class Group extends CActiveRecord
 		return 'group';
 	}
 
+	public function relations()
+	{
+		return array(
+			'users' => [self::HAS_MANY, 'User', 'group_id']
+		);
+	}
+
 	public function rules()
 	{
 		return array(

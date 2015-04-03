@@ -573,4 +573,20 @@ class WithRelatedBehaviorTest extends CDbTestCase
 
 		return $article;
 	}
+
+	public function testRelatedSaveOnce(){
+		$user1 = $this->getMock('User', array('insert'));
+		$user1->expects($this->once())->method('insert')->willReturn(true);
+		$user1->name = 'User 1';
+		$user2 = new User;
+		$user2->name = 'User 2';
+
+		$group = new Group;
+		$group->name = 'Group 1';
+		$group->users = [$user1, $user2];
+
+		$user1->group = $group;
+
+		$user1->withRelated->save(false, ['group' => ['users']]);
+	}
 }

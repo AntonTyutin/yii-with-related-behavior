@@ -35,6 +35,7 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	 * @var array
 	 */
 	private $_errors = array();
+	private $_alreadySaved = array();
 
 	/**
 	 * Returns the errors
@@ -131,7 +132,12 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 				return false;
 
 			$owner=$this->getOwner();
+
+			$this->_alreadySaved=array();
 		}
+
+		if (isset($this->_alreadySaved[spl_object_hash($owner)]))
+			return true;
 
 		$data = $this->mergeProcessedRelationsWith($data);
 
@@ -196,10 +202,7 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 					$keysMap=$this->getDependencyAttributes($relations[$name]->foreignKey, $relatedTableSchema, $ownerTableSchema);
 
 					if (null!==$related) {
-						if($data!==null)
-							$this->save(false,$data,$related);
-						else
-							$related->getIsNewRecord() ? $related->insert() : $related->update();
+						$this->save(false,$data,$related);
 					}
 
 					foreach ($keysMap as $fk=>$pk) {
@@ -210,8 +213,11 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 					$queue[]=array($relationClass,$relatedClass,$relations[$name]->foreignKey,$name,$data);
 			}
 
-			if(!($owner->getIsNewRecord() ? $owner->insert($attributes) : $owner->update($attributes)))
-				return false;
+			if (!isset($this->_alreadySaved[spl_object_hash($owner)]))
+				if(!($owner->getIsNewRecord() ? $owner->insert($attributes) : $owner->update($attributes)))
+					return false;
+
+			$this->_alreadySaved[spl_object_hash($owner)] = true;
 
 			foreach($queue as $pack)
 			{
@@ -233,10 +239,7 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 							$related->$fk = $owner->$pk;
 						}
 
-						if($data===null)
-							$related->getIsNewRecord() ? $related->insert() : $related->update();
-						else
-							$this->save(false,$data,$related);
+						$this->save(false,$data,$related);
 						break;
 					case CActiveRecord::HAS_MANY:
 						$oldOwner = clone $owner;
@@ -274,10 +277,7 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 							foreach($map as $fk=>$pk)
 								$model->$fk = $owner->$pk;
 
-							if($data===null)
-								$model->getIsNewRecord() ? $model->insert() : $model->update();
-							else
-								$this->save(false,$data,$model);
+							$this->save(false,$data,$model);
 						}
 						break;
 					case CActiveRecord::MANY_MANY:
@@ -358,12 +358,7 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 
 						foreach($related as $model)
 						{
-							$newFlag=$model->getIsNewRecord();
-
-							if($data===null)
-								$newFlag ? $model->insert() : $model->update();
-							else
-								$this->save(false,$data,$model);
+							$this->save(false,$data,$model);
 
 							$joinTableAttributes=array();
 
