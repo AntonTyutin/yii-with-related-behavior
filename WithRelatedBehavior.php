@@ -101,18 +101,19 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	}
 
 	/**
-	 * Setting relation attributes for many to many relation
+	 * Sets relation attributes for many to many relation
+	 *
 	 * @param string $relationName
-	 * @param object $relationObject
-	 * @param array  $attributes      [attributeName => value]
+	 * @param object $relatedObject
+	 * @param array $attributes [attributeName => value, ...]
+	 * @throws CException if $relatedObject is not in the $relationName objects list
 	 */
-	public function setManyManyAttributes($relationName, $relatedObject, $attributes)
+	public function setManyManyAttributes($relationName,$relatedObject,$attributes)
 	{
-		$objectHash = spl_object_hash($relatedObject);
-		if (!in_array($relatedObject, $this->getOwner()->getRelated($relationName), true)) {
-			throw CException("The {$relationName} isn't related to Object\{{$objectHash}\}");
-		}
-		$this->relationAttributes[$relationName][$objectHash] = $attributes;
+		$objectHash=spl_object_hash($relatedObject);
+		if (!in_array($relatedObject,$this->getOwner()->getRelated($relationName),true))
+			throw new CException("The {$relationName} isn't related to Object\{{$objectHash}\}");
+		$this->relationAttributes[$relationName][$objectHash]=$attributes;
 	}
 
 	/**
