@@ -55,7 +55,7 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	 */
 	public function validate($data=null,$clearErrors=true,$owner=null)
 	{
-		$data = $this->mergeProcessedRelationsWith($data);
+		$data=CMap::mergeArray($this->_processedRelations,is_array($data)?$data:array());
 		$this->_errors=$this->internalValidateAndGetErrors($data,$clearErrors,$owner);
 		return !$this->_errors;
 	}
@@ -135,13 +135,13 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 
 			$owner=$this->getOwner();
 
+			$data=CMap::mergeArray($this->_processedRelations,is_array($data)?$data:array());
+
 			$this->_alreadySaved=array();
 		}
 
 		if (isset($this->_alreadySaved[spl_object_hash($owner)]))
 			return true;
-
-		$data = $this->mergeProcessedRelationsWith($data);
 
 		/** @var CDbConnection $db */
 		$db=$owner->getDbConnection();
@@ -573,18 +573,6 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 		$this->_processedRelations=CMap::mergeArray($this->_processedRelations,$definition);
 
 		return $this;
-	}
-
-	/**
-	 * Get list of processed relations
-	 * @param array|null $definition extra relations definitions to merge
-	 * @return array
-	 */
-	private function mergeProcessedRelationsWith($definition=null)
-	{
-		return $definition!==null
-			? CMap::mergeArray($this->_processedRelations,$definition)
-			: $this->_processedRelations;
 	}
 
 	private static function normalizeRelatedArray(array $definition)
