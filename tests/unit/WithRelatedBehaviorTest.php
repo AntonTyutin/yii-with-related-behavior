@@ -447,16 +447,45 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$this->markTestSkipped('Not implemented.');
 	}
 
-	public function testProcessedRelations()
+	public function testAddingProcessedRelations()
 	{
 		$article=new Article;
 
 		/** @var $behavior WithRelatedBehavior */
 		$modelBehavior=$article->withRelated;
+		$modelBehavior->addProcessedRelation(array('user'=>array('group')));
+		$this->assertEquals(array('user'=>array('group'=>array())),$modelBehavior->getProcessedRelations());
 		$modelBehavior->addProcessedRelation('user');
-		$this->assertEquals($modelBehavior->getProcessedRelations(),array('user'));
+		$this->assertEquals(array('user'=>array('group'=>array())),$modelBehavior->getProcessedRelations());
 		$modelBehavior->addProcessedRelation('tag');
-		$this->assertEquals($modelBehavior->getProcessedRelations(),array('user','tag'));
+		$this->assertEquals(
+			array('user'=>array('group'=>array()),'tag'=>array()),
+			$modelBehavior->getProcessedRelations()
+		);
+	}
+
+	public function testNormalizeNotUniqueRelations()
+	{
+		$article=new Article();
+
+		/** @var $modelBehavior WithRelatedBehavior */
+		$modelBehavior=$article->withRelated;
+		$modelBehavior->addProcessedRelation(array(
+			'user'=>array('group'),
+			'user',
+			'tags',
+			'tags',
+		));
+
+		$this->assertEquals(
+			array(
+				'user'=>array(
+					'group'=>array()
+				),
+				'tags'=>array()
+			),
+			$modelBehavior->getProcessedRelations()
+		);
 	}
 
 	public function testProcessedRelationsValidate()
@@ -479,7 +508,7 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$article->tags=array($tag1,$tag2);
 
 		$relations=array('user', 'tags');
-		/** @var $behavior WithRelatedBehavior */
+		/** @var $modelBehavior WithRelatedBehavior */
 		$modelBehavior=$article->withRelated;
 		$modelBehavior->addProcessedRelation($relations);
 
@@ -493,8 +522,8 @@ class WithRelatedBehaviorTest extends CDbTestCase
 	{
 		$article=self::createNewUserArticleWithTags();
 
-		$relations=array('user', 'tags');
-		/** @var $behavior WithRelatedBehavior */
+		$relations=array('user' => ['group'], 'tags');
+		/** @var $modelBehavior WithRelatedBehavior */
 		$modelBehavior=$article->withRelated;
 		$modelBehavior->addProcessedRelation($relations);
 		
@@ -505,26 +534,7 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$this->assertNotEmpty($savedArticle);
 		$this->assertNotEmpty($savedArticle->tags);
 		$this->assertNotEmpty($savedArticle->user);
-	}
-
-	public function testNotUniqueRelationsValidate()
-	{
-		$article=self::createNewUserArticleWithTags();
-
-		$relations=array(
-			'user',
-			'user',
-			'tags',
-			'tags',
-		);
-		/** @var $behavior WithRelatedBehavior */
-		$modelBehavior=$article->withRelated;
-		$modelBehavior->addProcessedRelation($relations);
-
-		// validate none-valid state
-		$modelBehavior->validate();
-		$errors=$modelBehavior->getErrors();
-		$this->assertEmpty($errors);
+		$this->assertNotEmpty($savedArticle->user->group);
 	}
 
 	public function testNotUniqueRelationsSave()

@@ -45,6 +45,7 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	{
 		return $this->_errors;
 	}
+
 	/**
 	 * Validate main model and all it's related models recursively.
 	 * @param array $data attributes and relations.
@@ -550,16 +551,26 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	}
 
 	/**
+	 * Get list of processed relations
+	 * @return array
+	 */
+	public function getProcessedRelations()
+	{
+		return $this->_processedRelations;
+	}
+
+	/**
 	 * Add relation(s) to processed list
 	 * @param array|string $definition
+	 * @return $this
 	 */
 	public function addProcessedRelation($definition)
 	{
-		if (is_array($definition)) {
-			$this->_processedRelations = CMap::mergeArray($this->_processedRelations,$definition);
-		} elseif (is_string($definition)) {
-			$this->_processedRelations[]=$definition;
+		if (!is_array($definition)) {
+			$definition=array($definition=>array());
 		}
+		$definition=self::normalizeRelatedArray($definition);
+		$this->_processedRelations=CMap::mergeArray($this->_processedRelations,$definition);
 
 		return $this;
 	}
@@ -576,12 +587,23 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 			: $this->_processedRelations;
 	}
 
-	/**
-	 * Get list of processed relations
-	 * @return array
-	 */
-	public function getProcessedRelations()
+	private static function normalizeRelatedArray(array $definition)
 	{
-		return $this->_processedRelations;
+		$normalized = array();
+
+		foreach ($definition as $key=>$value)
+		{
+			if (is_string($value))
+			{
+				if (!isset($normalized[$value]))
+					$normalized[$value]=array();
+			}
+			elseif (is_array($value))
+				$normalized[$key]=self::normalizeRelatedArray($value);
+			else
+				throw new CException('Values in the relations array must be strings or arrays');
+		}
+
+		return $normalized;
 	}
 }
