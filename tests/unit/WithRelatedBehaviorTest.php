@@ -253,7 +253,7 @@ class WithRelatedBehaviorTest extends CDbTestCase
 			'comments'=>array('user'),
 		));
 		$this->assertTrue($result);
-		
+
 		$article->comments=array_slice($article->comments,1);
 
 		$result=$article->withRelated->save(true,array('comments'));
@@ -409,7 +409,7 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$this->assertInternalType('array', $errors['user']['group']);
 		$this->assertArrayHasKey('name', $errors['user']['group']);
 	}
-	
+
 	public function testSaveRelationAttributes()
 	{
 		$tag1=new Tag;
@@ -526,7 +526,7 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		/** @var $modelBehavior WithRelatedBehavior */
 		$modelBehavior=$article->withRelated;
 		$modelBehavior->addProcessedRelation($relations);
-		
+
 		// save valid data and check existance
 		$modelBehavior->save();
 		$savedArticle=Article::model()->with(array('user', 'tags'))->find();
@@ -598,5 +598,27 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$user1->group = $group;
 
 		$user1->withRelated->save(false, ['group' => ['users']]);
+	}
+
+	public function testRemoveProcessedRelation()
+	{
+		$article=new Article();
+
+		$relations=array('user' => array('group'), 'tags');
+		/** @var $modelBehavior WithRelatedBehavior */
+		$modelBehavior=$article->withRelated;
+		$modelBehavior->addProcessedRelation($relations);
+
+		$modelBehavior->removeProcessedRelation('tags');
+		$this->assertEquals(
+			$modelBehavior->getProcessedRelations(),
+			array('user' => array('group' => array()))
+		);
+
+		$modelBehavior->removeProcessedRelation('user');
+		$this->assertEquals(
+			$modelBehavior->getProcessedRelations(),
+			array()
+		);
 	}
 }
