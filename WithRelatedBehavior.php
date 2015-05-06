@@ -594,4 +594,16 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 
 		return $normalized;
 	}
+
+    /**
+     * Remove relation from processed list
+     * @param string $relationName
+     * @return $this
+     */
+    public function removeProcessedRelation($relationName)
+    {
+        unset($this->_processedRelations[$relationName]);
+
+        return $this;
+    }
 }
