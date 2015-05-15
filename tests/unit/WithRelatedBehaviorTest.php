@@ -531,10 +531,29 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$modelBehavior->save();
 		$savedArticle=Article::model()->with(array('user', 'tags'))->find();
 
-		$this->assertNotEmpty($savedArticle);
+		$this->assertNotNull($savedArticle);
 		$this->assertNotEmpty($savedArticle->tags);
-		$this->assertNotEmpty($savedArticle->user);
-		$this->assertNotEmpty($savedArticle->user->group);
+		$this->assertNotNull($savedArticle->user);
+		$this->assertNotNull($savedArticle->user->group);
+	}
+
+	public function testChildrenProcessedRelationsSave()
+	{
+		$article=self::createNewUserArticleWithTags();
+
+		/** @var $modelBehavior WithRelatedBehavior */
+		$modelBehavior=$article->withRelated;
+		$modelBehavior->addProcessedRelation(array('user', 'tags'));
+
+		$article->user->withRelated->addProcessedRelation(array('group'));
+		// save valid data and check existance
+		$modelBehavior->save();
+		$savedArticle=Article::model()->with(array('user', 'tags'))->find();
+
+		$this->assertNotNull($savedArticle);
+		$this->assertNotEmpty($savedArticle->tags);
+		$this->assertNotNull($savedArticle->user);
+		$this->assertNotNull($savedArticle->user->group);
 	}
 
 	public function testNotUniqueRelationsSave()

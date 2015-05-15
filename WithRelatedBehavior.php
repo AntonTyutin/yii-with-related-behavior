@@ -134,10 +134,22 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 				return false;
 
 			$owner=$this->getOwner();
-
 			$data=CMap::mergeArray($this->_processedRelations,is_array($data)?$data:array());
 
 			$this->_alreadySaved=array();
+		}
+		else
+		{
+			$thisClass=__CLASS__;
+			foreach ($owner->behaviors() as $behName => $behDefinition)
+				if (
+					is_string($behDefinition)
+						&& ($behDefinition==$thisClass || is_subclass_of($behDefinition,$thisClass))
+					|| is_array($behDefinition)
+						&& ($behDefinition['class']==$thisClass || is_subclass_of($behDefinition['class'],$thisClass))
+					|| is_object($behDefinition) && ($behDefinition instanceof $thisClass)
+				)
+					$data=CMap::mergeArray($owner->$behName->getProcessedRelations(),is_array($data)?$data:array());
 		}
 
 		if (isset($this->_alreadySaved[spl_object_hash($owner)]))
