@@ -546,7 +546,7 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$modelBehavior->addProcessedRelation(array('user', 'tags'));
 
 		$article->user->withRelated->addProcessedRelation(array('group'));
-		// save valid data and check existance
+		// save valid data and check existence
 		$modelBehavior->save();
 		$savedArticle=Article::model()->with(array('user', 'tags'))->find();
 

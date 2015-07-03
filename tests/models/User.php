@@ -33,7 +33,12 @@ class User extends CActiveRecord
 	public function behaviors()
 	{
 		return array(
-			'withRelated'=>'WithRelatedBehavior',
+			'withRelated'=>new WithRelatedBehavior(),
+			'CTimestampBehavior'=>array(
+				'class' => 'zii.behaviors.CTimestampBehavior',
+				'createAttribute' => 'created_at',
+				'updateAttribute' => 'updated_at',
+			)
 		);
 	}
 

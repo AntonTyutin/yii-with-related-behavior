@@ -141,13 +141,10 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 		else
 		{
 			$thisClass=__CLASS__;
-			foreach ($owner->behaviors() as $behName => $behDefinition)
+			foreach ($owner->behaviors() as $behName=>$behDefinition)
 				if (
-					is_string($behDefinition)
-						&& ($behDefinition==$thisClass || is_subclass_of($behDefinition,$thisClass))
-					|| is_array($behDefinition)
-						&& ($behDefinition['class']==$thisClass || is_subclass_of($behDefinition['class'],$thisClass))
-					|| is_object($behDefinition) && ($behDefinition instanceof $thisClass)
+					is_object($behDefinition)&&($behDefinition instanceof $thisClass)
+						||!is_object($behDefinition)&&$this->behaviorClassSubclassOrSelf($behDefinition,$thisClass)
 				)
 					$data=CMap::mergeArray($owner->$behName->getProcessedRelations(),is_array($data)?$data:array());
 		}
@@ -607,15 +604,39 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 		return $normalized;
 	}
 
-    /**
-     * Remove relation from processed list
-     * @param string $relationName
-     * @return $this
-     */
-    public function removeProcessedRelation($relationName)
-    {
-        unset($this->_processedRelations[$relationName]);
+	/**
+	 * Remove relation from processed list
+	 * @param string $relationName
+	 * @return $this
+	 */
+	public function removeProcessedRelation($relationName)
+	{
+		unset($this->_processedRelations[$relationName]);
 
-        return $this;
-    }
+		return $this;
+	}
+
+	/**
+	 * @param string|array $behDefinition
+	 * @param string $thisClass
+	 * @return bool
+	 * @throws CException
+	 */
+	private function behaviorClassSubclassOrSelf($behDefinition,$thisClass)
+	{
+		return (is_string($behDefinition)||is_array($behDefinition))&&$this->subclassOrSelf(
+			Yii::import(is_string($behDefinition)?$behDefinition:$behDefinition['class']),
+			$thisClass
+		);
+	}
+
+	/**
+	 * @param string $class
+	 * @param string $parentOrSelf
+	 * @return bool
+	 */
+	private function subclassOrSelf($class,$parentOrSelf)
+	{
+		return class_exists($class)&&($class==$parentOrSelf||is_subclass_of($class,$parentOrSelf));
+	}
 }

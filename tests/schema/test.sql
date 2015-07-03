@@ -35,7 +35,9 @@ DROP TABLE IF EXISTS `tag`;
 
 CREATE TABLE `tag` (
   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-  `name` varchar(100) DEFAULT NULL
+  `name` varchar(100) DEFAULT NULL,
+  `created_at` text NULL,
+  `updated_at` text NULL
 );
 
 DROP TABLE IF EXISTS `user`;
@@ -43,5 +45,7 @@ DROP TABLE IF EXISTS `user`;
 CREATE TABLE `user` (
   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
   `group_id` int(10) NULL,
-  `name` varchar(100) NOT NULL
+  `name` varchar(100) NOT NULL,
+  `created_at` text NULL,
+  `updated_at` text NULL
 );
