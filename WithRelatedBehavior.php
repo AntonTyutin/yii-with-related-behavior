@@ -528,9 +528,9 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 				continue;
 			elseif(is_array($related))
 			{
-				foreach ($related as $model)
+				foreach ($related as $key => $model)
 					if ($relationErrors=$this->getRelationErrors($data,$clearErrors,$model))
-						$errors[$name][]=$relationErrors;
+						$errors[$name][$key]=$relationErrors;
 			}
 			else
 				if($relationErrors=$this->getRelationErrors($data,$clearErrors,$related))
