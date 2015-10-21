@@ -439,7 +439,9 @@ class WithRelatedBehaviorTest extends CDbTestCase
 
 		$articleTags=ArticleTag::model()->findAll();
 		$this->assertEquals(2,count($articleTags));
-		$this->assertEquals(100,$articleTags[1]->weight);
+
+		$article=Article::model()->with('tags')->findByPk($article->primaryKey);
+		$this->assertEquals(100,$article->withRelated->getManyManyAttribute('tags', $article->tags[1],'weight'));
 	}
 
 	public function testSaveRelationAttributesCircularRefs()

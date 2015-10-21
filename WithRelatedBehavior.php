@@ -102,19 +102,53 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	}
 
 	/**
-	 * Sets relation attributes for many to many relation
+	 * Sets relation attributes of many to many relation
 	 *
 	 * @param string $relationName
 	 * @param object $relatedObject
 	 * @param array $attributes [attributeName => value, ...]
+	 * @throws CException if $relationName is not MANY_MANY relation
 	 * @throws CException if $relatedObject is not in the $relationName objects list
 	 */
 	public function setManyManyAttributes($relationName,$relatedObject,$attributes)
 	{
-		$objectHash=spl_object_hash($relatedObject);
-		if (!in_array($relatedObject,$this->getOwner()->getRelated($relationName),true))
-			throw new CException("The {$relationName} isn't related to Object\{{$objectHash}\}");
-		$this->relationAttributes[$relationName][$objectHash]=$attributes;
+		$objHash=spl_object_hash($relatedObject);
+		if(!isset($this->relationAttributes[$relationName][$objHash]))
+			$this->initManyManyAttributes($relationName,$relatedObject);
+
+		$merged=array_merge($this->relationAttributes[$relationName][$objHash],$attributes);
+		$this->relationAttributes[$relationName][$objHash]=$merged;
+	}
+
+	/**
+	 * Gets relation attribute of many to many relation
+	 *
+	 * @param string $relationName
+	 * @param object $relatedObject
+	 * @throws CException if $relationName is not MANY_MANY relation
+	 * @throws CException if $relatedObject is not in the $relationName objects list
+	 */
+	public function getManyManyAttributes($relationName,$relatedObject)
+	{
+		$objHash=spl_object_hash($relatedObject);
+		if(!isset($this->relationAttributes[$relationName][$objHash]))
+			$this->initManyManyAttributes($relationName,$relatedObject);
+
+		return $this->relationAttributes[$relationName][$objHash];
+	}
+
+	/**
+	 * Gets relation attribute of many to many relation
+	 *
+	 * @param string $relationName
+	 * @param object $relatedObject
+	 * @param string $attributeName
+	 * @throws CException if $relationName is not MANY_MANY relation
+	 * @throws CException if $relatedObject is not in the $relationName objects list
+	 */
+	public function getManyManyAttribute($relationName,$relatedObject,$attributeName)
+	{
+		return $this->getManyManyAttributes($relationName,$relatedObject)[$attributeName];
 	}
 
 	/**
@@ -614,6 +648,44 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 		unset($this->_processedRelations[$relationName]);
 
 		return $this;
+	}
+
+	/**
+	 * @param $relationName
+	 * @param $relatedObject
+	 * @throws CException if $relationName is not MANY_MANY relation
+	 * @throws CException if $relatedObject is not in the $relationName objects list
+	 */
+	private function initManyManyAttributes($relationName,$relatedObject)
+	{
+		$owner=$this->getOwner();
+		$objectHash=spl_object_hash($relatedObject);
+
+		if(!in_array($relatedObject,$owner->getRelated($relationName),true))
+			throw new CException("The {$relationName} isn't related to Object\{{$objectHash}\}");
+
+		$relation=$owner->getActiveRelation($relationName);
+		if (!$relation instanceof CManyManyRelation)
+			throw new CException("The {$relationName} isn't MANY_MANY relation");
+
+		if(array_filter((array)$owner->getPrimaryKey()))
+		{
+			$keyValues=array_merge((array)$owner->primaryKey,(array)$relatedObject->primaryKey);
+			$criteria=new CDbCriteria();
+			$criteria->addColumnCondition(array_combine($relation->getJunctionForeignKeys(),$keyValues));
+			$attributes=$owner->getCommandBuilder()
+					->createFindCommand($relation->getJunctionTableName(),$criteria)
+					->queryRow();
+		} else {
+			$columnNames=$owner->getDbConnection()->getSchema()
+					->getTable($relation->getJunctionTableName())
+					->getColumnNames();
+			$attributes=array_fill_keys($columnNames, null);
+		}
+
+		$attributes=array_diff_key($attributes,array_flip($relation->getJunctionForeignKeys()));
+
+		$this->relationAttributes[$relationName][$objectHash]=$attributes;
 	}
 
 	/**
