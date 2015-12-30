@@ -31,6 +31,17 @@ class Article extends CActiveRecord
 	{
 		return array(
 			array('title','required'),
+			array('comments', 'validateComments')
 		);
+	}
+
+	public function validateComments()
+	{
+		$groupComments=create_function('$acc,$comment','$acc[$comment->content][]=$comment; return $acc;');
+		$filterGroups=create_function('$grp','return count($grp)>1;');
+		foreach(array_filter(array_reduce($this->comments,$groupComments,array()),$filterGroups) as $group)
+			/** @var CActiveRecord $comment */
+			foreach($group as $comment)
+				$comment->addError('content', 'Comment should be unique');
 	}
 }

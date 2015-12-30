@@ -56,7 +56,9 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	public function validate($data=null,$clearErrors=true,$owner=null)
 	{
 		$data=CMap::mergeArray($this->_processedRelations,is_array($data)?$data:array());
-		$this->_errors=$this->internalValidateAndGetErrors($data,$clearErrors,$owner);
+		if($clearErrors)
+			$this->internalClearErrors($data,$owner);
+		$this->_errors=$this->internalValidateAndGetErrors($data,$owner);
 		return !$this->_errors;
 	}
 
@@ -507,11 +509,10 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	/**
 	 * Validate main model and all it's related models recursively and return associative array of errors.
 	 * @param array|null $data attributes and relations.
-	 * @param boolean $clearErrors whether to call {@link CModel::clearErrors} before performing validation.
 	 * @param CActiveRecord $owner for internal needs.
 	 * @return array associative array of errors including errors of relations specified in $data
 	 */
-	private function internalValidateAndGetErrors($data,$clearErrors,$owner)
+	private function internalClearErrors($data,$owner)
 	{
 		if($owner===null)
 			$owner=$this->getOwner();
@@ -544,7 +545,73 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 				create_function('$x,$y','return !is_string($x) || !is_string($y) ? -1 : strcmp($x,$y);'));
 		}
 
-		$owner->validate($attributes,$clearErrors);
+		$owner->clearErrors();
+
+		foreach($newData as $name=>$data)
+		{
+			if(!is_array($data))
+			{
+				$name=$data;
+				$data=array($name);
+			}
+
+			if(!$owner->hasRelated($name))
+				continue;
+
+			/** @var CActiveRecord|CActiveRecord[]|null $related */
+			$related=$owner->getRelated($name);
+
+			if(null===$related)
+				continue;
+			elseif(is_array($related))
+				foreach ($related as $key => $model)
+					$this->internalClearErrors($data,$model);
+			else
+				$this->internalClearErrors($data,$related);
+		}
+	}
+
+	/**
+	 * Validate main model and all it's related models recursively and return associative array of errors.
+	 * @param array|null $data attributes and relations.
+	 * @param CActiveRecord $owner for internal needs.
+	 * @return array associative array of errors including errors of relations specified in $data
+	 * @throws CDbException
+	 */
+	private function internalValidateAndGetErrors($data,$owner)
+	{
+		if($owner===null)
+			$owner=$this->getOwner();
+
+		if($data===null)
+		{
+			$attributes=null;
+			$newData=array();
+		}
+		else
+		{
+			// retrieve real class attributes that was specified in the class declaration
+			$classAttributes=get_class_vars(get_class($owner));
+			unset($classAttributes['db']); // has nothing in common with the application logic
+			$classAttributes=array_keys($classAttributes);
+
+			// mixing virtual attributes that represents database table columns with real class attributes
+			$attributeNames=array_merge($classAttributes,$owner->attributeNames());
+			// array_intersect must not be used here because when error_reporting is -1 notice will happen
+			// since $data array contains not just scalar string values
+			$attributes=array_uintersect($data,$attributeNames,
+				create_function('$x,$y','return !is_string($x) || !is_string($y) ? -1 : strcmp($x,$y);'));
+
+			if($attributes===array())
+				$attributes=null;
+
+			// array_udiff must not be used here because when error_reporting is -1 notice will happen
+			// since $data array contains not just scalar string values
+			$newData=array_udiff($data,$attributeNames,
+				create_function('$x,$y','return !is_string($x) || !is_string($y) ? -1 : strcmp($x,$y);'));
+		}
+
+		$owner->validate($attributes,false);
 		$errors=$owner->errors;
 
 		foreach($newData as $name=>$data)
@@ -563,11 +630,11 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 			elseif(is_array($related))
 			{
 				foreach ($related as $key => $model)
-					if ($relationErrors=$this->getRelationErrors($data,$clearErrors,$model))
+					if ($relationErrors=$this->getRelationErrors($data,$model))
 						$errors[$name][$key]=$relationErrors;
 			}
 			else
-				if($relationErrors=$this->getRelationErrors($data,$clearErrors,$related))
+				if($relationErrors=$this->getRelationErrors($data,$related))
 					$errors[$name]=$relationErrors;
 		}
 
@@ -578,17 +645,16 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 	 * Collects errors of given related object
 	 *
 	 * @param array|null $data
-	 * @param bool $clearErrors
 	 * @param CActiveRecord $model
-	 *
 	 * @return array
+	 * @internal param bool $clearErrors
 	 */
-	private function getRelationErrors($data,$clearErrors,$model)
+	private function getRelationErrors($data,$model)
 	{
 		$relationErrors = array();
 		if (is_array($data))
-			$relationErrors=$this->internalValidateAndGetErrors($data,$clearErrors,$model);
-		elseif (!$model->validate(null,$clearErrors))
+			$relationErrors=$this->internalValidateAndGetErrors($data,$model);
+		elseif (!$model->validate(null,false))
 			$relationErrors=$model->errors;
 		return $relationErrors;
 	}

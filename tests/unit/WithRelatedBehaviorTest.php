@@ -509,7 +509,13 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$article->user=$user;
 		$article->tags=array('a'=>$tag1,'b'=>$tag2);
 
-		$relations=array('user', 'tags');
+		$comment1=new Comment;
+		$comment2=new Comment;
+		$comment1->content='Same comment';
+		$comment2->content='Same comment';
+		$article->comments=array($comment1,$comment2);
+
+		$relations=array('user','tags','comments');
 		/** @var $modelBehavior WithRelatedBehavior */
 		$modelBehavior=$article->withRelated;
 		$modelBehavior->addProcessedRelation($relations);
@@ -518,6 +524,7 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$modelBehavior->validate();
 		$errors=$modelBehavior->getErrors();
 		$this->assertNotEmpty($errors['tags']);
+		$this->assertNotEmpty($errors['comments']);
 		$this->assertArrayHasKey('b', $errors['tags']);
 	}
 
