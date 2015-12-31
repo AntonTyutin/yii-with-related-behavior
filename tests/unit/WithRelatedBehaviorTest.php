@@ -521,11 +521,12 @@ class WithRelatedBehaviorTest extends CDbTestCase
 		$modelBehavior->addProcessedRelation($relations);
 
 		// validate none-valid state
-		$modelBehavior->validate();
+		$modelBehavior->validate(array('tags'));
 		$errors=$modelBehavior->getErrors();
 		$this->assertNotEmpty($errors['tags']);
 		$this->assertNotEmpty($errors['comments']);
 		$this->assertArrayHasKey('b', $errors['tags']);
+		$this->assertCount(1, $errors['tags']['b']['name']);
 	}
 
 	public function testProcessedRelationsSave()

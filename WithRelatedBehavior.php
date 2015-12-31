@@ -609,11 +609,17 @@ class WithRelatedBehavior extends CActiveRecordBehavior
 			// since $data array contains not just scalar string values
 			$newData=array_udiff($data,$attributeNames,
 				create_function('$x,$y','return !is_string($x) || !is_string($y) ? -1 : strcmp($x,$y);'));
+
+			foreach($newData as $key=>$value)
+				if (is_string($value))
+				{
+					unset($newData[$key]);
+					$newData[$value]=array();
+				}
 		}
 
 		$owner->validate($attributes,false);
 		$errors=$owner->errors;
-
 		foreach($newData as $name=>$data)
 		{
 			if(!is_array($data))
